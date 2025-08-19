@@ -59,11 +59,9 @@ class CustomerDataProviderVectorized(CustomerDataProvider):
             raise
 
         finally:
-            success_rate = (total_valid / total_processed * 100) if total_processed > 0 else 0
             logger.info(
                 f"Processing complete. Total processed: {total_processed}, "
-                f"Total valid: {total_valid}, "
-                f"Success rate: {success_rate:.2f}%"
+                f"Total valid: {total_valid} "
             )
     
     def _validate_batch(self, df_batch: pd.DataFrame) -> pd.DataFrame:
@@ -71,8 +69,6 @@ class CustomerDataProviderVectorized(CustomerDataProvider):
         Validate batch using vectorized pandas operations.
 
         """
-        original_count = len(df_batch)
-
         df_batch = validate_ages_df(
             df_batch,
             min_age=self.validation_config.min_age,
@@ -85,9 +81,6 @@ class CustomerDataProviderVectorized(CustomerDataProvider):
         )
         df_batch = validate_names_df(df_batch)
         df_batch = validate_cookies_df(df_batch)
-
-        final_count = len(df_batch)
-        logger.debug(f"Batch validation: {original_count} -> {final_count} records ({final_count/original_count*100:.1f}%)")
 
         return df_batch
     

@@ -4,6 +4,7 @@ import os
 from src.config.main_config import MainConfig
 
 from src.services.customer_data_provider import CustomerDataProvider
+from src.services.customer_data_provider_vectorized import CustomerDataProviderVectorized
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,7 +39,7 @@ def main():
     config = load_config()
     logger.info(f"Loaded config: {config}")
 
-    customer_provider = CustomerDataProvider(
+    customer_provider = CustomerDataProviderVectorized(
         config.validation_config,
         config.customer_data_path
     )
