@@ -2,7 +2,8 @@ import logging
 import os
 
 from src.config.main_config import MainConfig
-from src.config.validation_config import ValidationConfig
+
+from src.services.customer_data_provider import CustomerDataProvider
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def load_config() -> MainConfig:
     """
-    Loads validation config from a path specified by env variable
+    Loads config from a path specified by env variable
     falls back to default config.
     """
     config_path = os.getenv('CONFIG_PATH')
@@ -36,6 +37,14 @@ def main():
 
     config = load_config()
     logger.info(f"Loaded config: {config}")
+
+    customer_provider = CustomerDataProvider(
+        config.validation_config,
+        config.customer_data_path
+    )
+
+    for batch in customer_provider.get_next_batch():
+        print(batch)
 
 
 if __name__ == "__main__":

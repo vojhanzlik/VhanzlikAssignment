@@ -6,43 +6,44 @@ from pydantic import BaseModel, Field, field_validator, ValidationInfo, model_va
 from pydantic.functional_validators import ModelWrapValidatorHandler
 
 from src.utils.validation.customer_validation import validate_name, validate_cookie, validate_banner_id, \
-    validate_age_with_config
+    validate_age
 
 
 class Customer(BaseModel):
-    """Customer model with validation for ShowAds API."""
+    """Customer model with validation"""
 
-    name: Annotated[str, Field(min_length=1, max_length=100)]
-    age: Annotated[int, Field(ge=0, le=150)]
-    cookie: Annotated[str, Field(min_length=1)]
-    banner_id: Annotated[int, Field(ge=0, le=99)]
+    Name: Annotated[str, Field(min_length=1)]
+    Age: int
+    Cookie: Annotated[str, Field(min_length=1)]
+    Banner_id: int
 
     @model_validator(mode='wrap')
     @classmethod
     def log_failed_validation(cls, data: Any, handler: ModelWrapValidatorHandler[Self]) -> Self:
+        """ inspired by https://docs.pydantic.dev/latest/concepts/validators/#model-validators :)"""
         try:
             return handler(data)
         except ValidationError:
             logging.error('Model %s failed to validate with data %s', cls, data)
             raise
 
-    @field_validator('name', mode='after')
+    @field_validator('Name', mode='after')
     @classmethod
     def validate_name_format(cls, v: str) -> str:
         return validate_name(v)
 
-    @field_validator('cookie', mode='after')
+    @field_validator('Cookie', mode='after')
     @classmethod
     def validate_cookie_format(cls, v: str) -> str:
         return validate_cookie(v)
 
-    @field_validator('banner_id', mode='after')
+    @field_validator('Banner_id', mode='after')
     @classmethod
-    def validate_banner_id_range(cls, v: int) -> int:
-        return validate_banner_id(v)
+    def validate_banner_id_range(cls, v: int, info: ValidationInfo) -> int:
+        return validate_banner_id(v, info)
 
-    @field_validator('age', mode='after')
+    @field_validator('Age', mode='after')
     @classmethod
     def validate_age_limits(cls, v: int, info: ValidationInfo) -> int:
-        return validate_age_with_config(v, info)
+        return validate_age(v, info)
 

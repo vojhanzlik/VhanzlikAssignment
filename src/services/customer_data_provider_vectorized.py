@@ -21,9 +21,9 @@ class CustomerDataProviderVectorized(CustomerDataProvider):
     Customer data provider using pandas operations for processing.
     """
     
-    def __init__(self, csv_path: str | Path, batch_size: int = 1000, validation_config: ValidationConfig = ValidationConfig()):
+    def __init__(self, validation_config, csv_path: str | Path, batch_size: int = 1000):
 
-        super().__init__(csv_path, batch_size, validation_config)
+        super().__init__(validation_config, csv_path, batch_size)
 
     def get_next_batch(self) -> Generator[List[Customer], None, None]:
         """
@@ -96,13 +96,12 @@ class CustomerDataProviderVectorized(CustomerDataProvider):
         Create Customer objects from validated DataFrame.
         """
         customers = []
-        validation_context = self.validation_config.to_context()
         
         records = df.to_dict('records')
         
         for record in records:
             try:
-                customer = Customer.model_validate(record, context=validation_context)
+                customer = Customer.model_validate(record, context=self.validation_config.to_context())
                 customers.append(customer)
             except Exception as e:
                 # this should never happen as validation was done with pandas

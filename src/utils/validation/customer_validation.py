@@ -3,6 +3,8 @@ import uuid
 
 from pydantic_core.core_schema import ValidationInfo
 
+from src.config.validation_config import MIN_AGE_PARAM, MAX_AGE_PARAM, MAX_BANNER_ID_PARAM, MIN_BANNER_ID_PARAM
+
 
 def validate_name(v: str) -> str:
     """Validate that name contains only letters and spaces."""
@@ -20,17 +22,26 @@ def validate_cookie(v: str) -> str:
         raise ValueError('Cookie must be a valid UUID format')
 
 
-def validate_banner_id(v: int) -> int:
+def validate_banner_id(v: int, info: ValidationInfo) -> int:
     """Validate that banner_id is between bounds."""
-    if not (0 <= v <= 99):
+    if not info.context or MIN_BANNER_ID_PARAM not in info.context or MAX_BANNER_ID_PARAM not in info.context:
+        raise ValueError('Insufficient context information')
+
+    min_banner_id = info.context.get(MIN_BANNER_ID_PARAM)
+    max_banner_id = info.context.get(MAX_BANNER_ID_PARAM)
+
+    if not (min_banner_id <= v <= max_banner_id):
         raise ValueError('Banner_id must be between 0 and 99')
     return v
 
 
-def validate_age_with_config(v: int, info: ValidationInfo) -> int:
+def validate_age(v: int, info: ValidationInfo) -> int:
     """Validate age with configurable minimum age."""
-    min_age = info.context.get('min_age', 18) if info.context else 18
-    max_age = info.context.get('max_age', 100) if info.context else 100
+    if not info.context or MIN_AGE_PARAM not in info.context or MAX_AGE_PARAM not in info.context:
+        raise ValueError('Insufficient context information')
+
+    min_age = info.context.get(MIN_AGE_PARAM)
+    max_age = info.context.get(MAX_AGE_PARAM)
 
     if v < min_age:
         raise ValueError(f'Age must be at least {min_age}')

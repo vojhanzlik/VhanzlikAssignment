@@ -17,12 +17,12 @@ class CustomerDataProvider:
     """
     
     def __init__(
-        self, 
+        self,
+        validation_config: ValidationConfig,
         csv_path: str | Path, 
-        batch_size: int = 1000,
-        validation_config: ValidationConfig = ValidationConfig()
-    ):
+        batch_size: int = 1000
 
+    ):
         self.csv_path = Path(csv_path)
         self.batch_size = batch_size
         self.validation_config = validation_config
@@ -36,8 +36,7 @@ class CustomerDataProvider:
         """
         logger.info(f"Starting to process CSV file: {self.csv_path}")
         logger.info(f"Batch size: {self.batch_size}")
-        logger.info(f"Validation config: min_age={self.validation_config.min_age}, "
-                    f"max_age={self.validation_config.max_age}")
+        logger.info(f"Validation config: {self.validation_config}")
 
         total_processed = 0
         total_valid = 0
@@ -68,8 +67,7 @@ class CustomerDataProvider:
         finally:
             logger.info(
                 f"Processing complete. Total processed: {total_processed}, "
-                f"Total valid: {total_valid}, "
-                f"Success rate: {(total_valid / total_processed * 100):.2f}%"
+                f"Total valid: {total_valid}"
             )
 
     def _validate_batch(self, df_batch: pd.DataFrame) -> List[Customer]:
@@ -77,14 +75,13 @@ class CustomerDataProvider:
         Validate a batch of customer records.
         """
         valid_customers = []
-        validation_context = self.validation_config.to_context()
         
         for index, row in df_batch.iterrows():
             try:
                 customer_data = row.to_dict()
                 customer = Customer.model_validate(
                     customer_data, 
-                    context=validation_context
+                    context=self.validation_config.to_context()
                 )
                 valid_customers.append(customer)
                 
@@ -103,17 +100,3 @@ class CustomerDataProvider:
         
         return valid_customers
     
-
-    
-    def get_total_record_count(self) -> int:
-        """
-        Get the total number of records in the CSV file.
-
-        """
-        try:
-            # Count lines efficiently without loading into memory
-            with open(self.csv_path, 'r') as f:
-                return sum(1 for _ in f) - 1  # Subtract header row
-        except Exception as e:
-            logger.error(f"Error counting records: {str(e)}")
-            return 0
