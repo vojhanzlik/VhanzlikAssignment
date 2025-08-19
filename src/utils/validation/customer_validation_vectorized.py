@@ -1,6 +1,5 @@
 """
-Vectorized versions of validation functions for efficient pandas DataFrame processing.
-Includes both individual field validators and complete DataFrame validation functions.
+Vectorized versions of validation functions pandas DataFrame processing.
 """
 import logging
 import re
