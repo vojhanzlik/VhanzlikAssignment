@@ -3,7 +3,6 @@ import os
 
 from src.config.main_config import MainConfig
 
-from src.services.customer_data_provider import CustomerDataProvider
 from src.services.customer_data_provider_vectorized import CustomerDataProviderVectorized
 
 logging.basicConfig(
