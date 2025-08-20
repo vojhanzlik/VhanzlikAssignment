@@ -2,20 +2,25 @@ import pytest
 import tempfile
 import csv
 from pathlib import Path
-from unittest.mock import patch, Mock
 
 from src.services.customer_data_provider import CustomerDataProvider
 from src.config.validation_config import ValidationConfig
 from src.models.customer import Customer
+from src.services.customer_data_provider_vectorized import CustomerDataProviderVectorized
 
 
-class TestCustomerDataProvider:
-    """Test cases for CustomerDataProvider class."""
-    
+class TestBothDataProviders:
+    """Test cases that run against both CustomerDataProvider implementations."""
+
     @pytest.fixture
     def config(self):
         """Provide test configuration."""
         return ValidationConfig(min_age=18, max_age=100, min_banner_id=0, max_banner_id=99)
+    
+    @pytest.fixture(params=[CustomerDataProvider, CustomerDataProviderVectorized])
+    def provider_class(self, request):
+        """Parametrized fixture that returns both provider classes."""
+        return request.param
     
     @pytest.fixture
     def valid_csv_data(self) -> list:
@@ -47,28 +52,28 @@ class TestCustomerDataProvider:
         temp_file.close()
         return temp_file.name
     
-    def test_initialization_valid_path(self, config: ValidationConfig, valid_csv_data: list):
+    def test_initialization_valid_path(self, provider_class, config: ValidationConfig, valid_csv_data: list):
         """Test initialization with valid CSV path."""
         csv_path = self.create_temp_csv(valid_csv_data)
         try:
-            provider = CustomerDataProvider(config, csv_path, batch_size=100)
+            provider = provider_class(config, csv_path, batch_size=100)
             assert provider.csv_path == Path(csv_path)
             assert provider.batch_size == 100
             assert provider.validation_config == config
         finally:
             Path(csv_path).unlink()
     
-    def test_initialization_invalid_path(self, config: ValidationConfig):
+    def test_initialization_invalid_path(self, provider_class, config: ValidationConfig):
         """Test initialization with invalid CSV path."""
         with pytest.raises(FileNotFoundError):
-            CustomerDataProvider(config, "non_existent_file.csv")
+            provider_class(config, "non_existent_file.csv")
 
     
-    def test_get_next_batch_all_valid(self, config: ValidationConfig, valid_csv_data: list):
+    def test_get_next_batch_all_valid(self, provider_class, config: ValidationConfig, valid_csv_data: list):
         """Test processing CSV with all valid records."""
         csv_path = self.create_temp_csv(valid_csv_data)
         try:
-            provider = CustomerDataProvider(config, csv_path, batch_size=1)
+            provider = provider_class(config, csv_path, batch_size=1)
             
             batches = list(provider.get_next_batch())
             
@@ -91,11 +96,11 @@ class TestCustomerDataProvider:
         finally:
             Path(csv_path).unlink()
     
-    def test_get_next_batch_mixed_validity(self, config: ValidationConfig, mixed_csv_data: list):
+    def test_get_next_batch_mixed_validity(self, provider_class, config: ValidationConfig, mixed_csv_data: list):
         """Test processing CSV with mixed valid/invalid records."""
         csv_path = self.create_temp_csv(mixed_csv_data)
         try:
-            provider = CustomerDataProvider(config, csv_path, batch_size=10)
+            provider = provider_class(config, csv_path, batch_size=10)
             
             batches = list(provider.get_next_batch())
             
@@ -113,7 +118,7 @@ class TestCustomerDataProvider:
         finally:
             Path(csv_path).unlink()
     
-    def test_empty_batch(self, config: ValidationConfig):
+    def test_empty_batch(self, provider_class, config: ValidationConfig):
         """Test that empty batches are not yielded."""
         # only invalid records
         invalid_data = [
@@ -123,7 +128,7 @@ class TestCustomerDataProvider:
         
         csv_path = self.create_temp_csv(invalid_data)
         try:
-            provider = CustomerDataProvider(config, csv_path)
+            provider = provider_class(config, csv_path)
             
             batches = list(provider.get_next_batch())
             
@@ -132,7 +137,7 @@ class TestCustomerDataProvider:
         finally:
             Path(csv_path).unlink()
     
-    def test_correct_batch_sizes(self, config: ValidationConfig):
+    def test_correct_batch_sizes(self, provider_class, config: ValidationConfig):
         """Test that batch size is respected."""
         valid_data = [["Name", "Age", "Cookie", "Banner_id"]]
         for i in range(25):
@@ -145,7 +150,7 @@ class TestCustomerDataProvider:
         
         csv_path = self.create_temp_csv(valid_data)
         try:
-            provider = CustomerDataProvider(config, csv_path, batch_size=10)
+            provider = provider_class(config, csv_path, batch_size=10)
             
             batches = list(provider.get_next_batch())
             
