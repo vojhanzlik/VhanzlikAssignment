@@ -1,0 +1,10 @@
+{
+  "customer_data_path": "data/data.csv",
+  "validation_config":
+    {
+      "min_age": 18,
+      "max_age": 100,
+      "min_banner_id": 0,
+      "max_banner_id": 99
+   }
+}
