@@ -25,7 +25,7 @@ class ValidationConfig(BaseModel):
     @field_validator('max_age')
     @classmethod
     def age_max_greater_than_min(cls, v, info):
-        if MIN_AGE_PARAM in info.data and v <= info.data[MIN_AGE_PARAM]:
+        if MIN_AGE_PARAM in info.data and v < info.data[MIN_AGE_PARAM]:
             raise ValueError('max_age must be greater than min_age')
         return v
 
@@ -33,7 +33,7 @@ class ValidationConfig(BaseModel):
     @field_validator('max_banner_id')
     @classmethod
     def banner_max_greater_than_min(cls, v, info):
-        if MIN_BANNER_ID_PARAM in info.data and v <= info.data[MIN_BANNER_ID_PARAM]:
+        if MIN_BANNER_ID_PARAM in info.data and v < info.data[MIN_BANNER_ID_PARAM]:
             raise ValueError('max_banner_id must be greater than min_banner_id')
         return v
 

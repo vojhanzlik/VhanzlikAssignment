@@ -12,6 +12,7 @@ from src.utils.validation.customer_validation import validate_name, validate_coo
 class Customer(BaseModel):
     """Customer model with validation"""
 
+    # fields need to start with uppercase to match csv column names
     Name: Annotated[str, Field(min_length=1)]
     Age: int
     Cookie: Annotated[str, Field(min_length=1)]

@@ -87,13 +87,13 @@ class CustomerDataProvider:
                 
             except ValidationError as e:
                 logger.error(
-                    f"Validation failed for row {index}: {customer_data}. "
+                    f"Validation failed for row {index} "
                     f"Errors: {e.errors()}"
                 )
                 continue
             except Exception as e:
                 logger.error(
-                    f"Unexpected error processing row {index}: {customer_data}. "
+                    f"Unexpected error processing row {index}. "
                     f"Error: {str(e)}"
                 )
                 continue
