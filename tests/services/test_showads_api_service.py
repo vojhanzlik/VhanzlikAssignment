@@ -196,6 +196,84 @@ class TestShowAdsApiService:
         await service.send_customers([])
 
     @pytest.mark.asyncio
+    async def test_retry_on_429_status(self):
+        """Test retry logic on 429 Too Many Requests."""
+        mock_session = Mock()
+        # First two requests return 429, third succeeds
+        responses = [
+            Mock(status=429),
+            Mock(status=429), 
+            Mock(status=200, json=AsyncMock(return_value={"AccessToken": "test_token"}))
+        ]
+        mock_session.post = Mock(side_effect=[AsyncContextManagerMock(r) for r in responses])
+        
+        service = ShowAdsApiService("test_project", session=mock_session)
+        token = await service.get_token()
+        
+        assert token == "test_token"
+        assert mock_session.post.call_count == 3
+    
+    @pytest.mark.asyncio
+    async def test_retry_on_500_error(self):
+        """Test retry logic on 500 error."""
+        mock_session = Mock()
+        # First request returns 500, second succeeds
+        responses = [
+            Mock(status=500),
+            Mock(status=200, json=AsyncMock(return_value={"AccessToken": "test_token"}))
+        ]
+        mock_session.post = Mock(side_effect=[AsyncContextManagerMock(r) for r in responses])
+        
+        service = ShowAdsApiService("test_project", session=mock_session)
+        token = await service.get_token()
+        
+        assert token == "test_token"
+        assert mock_session.post.call_count == 2
+    
+    @pytest.mark.asyncio
+    async def test_bulk_retry_on_401_clears_token(self, sample_customers):
+        """Test that 401 error clears token and retries with success."""
+        mock_session = Mock()
+        # First request returns 401, second succeeds after auth
+        bulk_responses = [
+            Mock(status=401),
+            Mock(status=200)
+        ]
+        auth_response = Mock(status=200, json=AsyncMock(return_value={"AccessToken": "new_token"}))
+        
+        mock_session.post = Mock(side_effect=[
+            AsyncContextManagerMock(bulk_responses[0]),  # First bulk call fails
+            AsyncContextManagerMock(auth_response),      # Auth call succeeds
+            AsyncContextManagerMock(bulk_responses[1])   # Second bulk call succeeds
+        ])
+        
+        service = ShowAdsApiService("test_project", session=mock_session)
+        service._access_token = "expired_token"
+        service._token_expires_at = datetime.now() + timedelta(hours=1)
+        
+        await service._send_bulk_chunk(sample_customers)
+        
+        assert mock_session.post.call_count == 3
+        assert service._access_token == "new_token"
+    
+    @pytest.mark.asyncio
+    async def test_max_retries_exceeded(self):
+        """Test that max retries limit is respected."""
+        mock_session = Mock()
+        # All requests return 429
+        mock_response = Mock(status=429, raise_for_status=Mock(side_effect=ClientResponseError(
+            request_info=Mock(), history=Mock()
+        )))
+        mock_session.post = Mock(return_value=AsyncContextManagerMock(mock_response))
+        
+        service = ShowAdsApiService("test_project", session=mock_session)
+        
+        with pytest.raises(ClientResponseError):
+            await service.get_token()
+        
+        assert mock_session.post.call_count == service.MAX_ATTEMPTS
+
+    @pytest.mark.asyncio
     async def test_context_manager(self):
         """Test using service as context manager."""
         async with ShowAdsApiService("test_project") as service:

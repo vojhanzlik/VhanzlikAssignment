@@ -2,6 +2,7 @@ import logging
 import os
 
 from src.config.main_config import MainConfig
+from src.models.customer import Customer
 
 from src.services.customer_data_provider_vectorized import CustomerDataProviderVectorized
 
@@ -44,7 +45,7 @@ def main():
     )
 
     for batch in customer_provider.get_next_batch():
-        print(batch)
+        continue
 
 
 if __name__ == "__main__":
