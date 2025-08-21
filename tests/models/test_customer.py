@@ -1,3 +1,5 @@
+"""Tests for Customer model validation and data integrity."""
+
 import pytest
 from pydantic import ValidationError
 

@@ -1,5 +1,4 @@
 {
-  "customer_data_path": "data/data.csv",
   "validation_config":
     {
       "min_age": 18,

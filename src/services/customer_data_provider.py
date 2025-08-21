@@ -1,3 +1,5 @@
+"""Customer data provider service for loading and validating CSV data."""
+
 import logging
 from pathlib import Path
 from typing import Generator, List

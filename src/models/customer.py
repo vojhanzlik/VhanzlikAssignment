@@ -1,3 +1,5 @@
+"""Customer data model with validation rules."""
+
 import logging
 
 from typing import Annotated, Any

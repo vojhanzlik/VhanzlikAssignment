@@ -1,3 +1,5 @@
+"""Validation functions for customer data fields."""
+
 import re
 import uuid
 

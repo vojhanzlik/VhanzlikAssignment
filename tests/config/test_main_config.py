@@ -1,3 +1,5 @@
+"""Tests for main configuration loading and validation."""
+
 import pytest
 import tempfile
 import json
@@ -13,7 +15,6 @@ class TestMainConfig:
     def test_from_json_valid_file(self):
         """Test loading from a valid JSON file."""
         valid_data = {
-            "customer_data_path": "/test/path/customers.csv",
             "validation_config": {
                 "min_age": 21,
                 "max_age": 65,
@@ -28,7 +29,6 @@ class TestMainConfig:
         
         try:
             config = MainConfig.from_json(temp_path)
-            assert config.customer_data_path == "/test/path/customers.csv"
             assert config.validation_config.min_age == 21
             assert config.validation_config.max_age == 65
             assert config.validation_config.min_banner_id == 5
@@ -39,7 +39,7 @@ class TestMainConfig:
     def test_from_json_partial_data_uses_defaults(self):
         """Loading partial JSON config fills the rest with defaults."""
         partial_data = {
-            "customer_data_path": "/custom/data.csv"
+
         }
         
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
@@ -48,7 +48,6 @@ class TestMainConfig:
         
         try:
             config = MainConfig.from_json(temp_path)
-            assert config.customer_data_path == "/custom/data.csv"
 
             default_validation_conf = ValidationConfig()
             assert config.validation_config.min_age == default_validation_conf.min_age
@@ -75,7 +74,6 @@ class TestMainConfig:
             config = MainConfig.from_json(temp_path)
 
             default_main_conf = MainConfig()
-            assert config.customer_data_path == default_main_conf.customer_data_path
             assert config.validation_config.min_age == 25
             assert config.validation_config.max_age == 70
             assert config.validation_config.min_banner_id == default_main_conf.validation_config.min_banner_id
@@ -104,7 +102,6 @@ class TestMainConfig:
     def test_from_json_invalid_validation_config_min_gt_max(self):
         """Test handling of invalid validation configuration where min age > max age."""
         invalid_data = {
-            "customer_data_path": "/test/data.csv",
             "validation_config": {
                 "min_age": 50,
                 "max_age": 30

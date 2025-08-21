@@ -1,1 +1,1 @@
-# Tests package
+"""Test suite for the ShowAds customer data processing system."""

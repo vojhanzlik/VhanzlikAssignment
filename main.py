@@ -1,9 +1,13 @@
+"""Main entry point for the data connector"""
+
+import asyncio
 import logging
-import os
+from pathlib import Path
 
 from src.config.main_config import MainConfig
 
 from src.services.customer_data_provider_vectorized import CustomerDataProviderVectorized
+from src.services.showads_api_service import ShowAdsApiService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -11,41 +15,40 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+CUSTOMER_DATA_PATH = Path(__file__).parent / 'data' / 'data.csv'
+CONFIG_PATH = Path(__file__).parent / 'config' / 'config.json'
 
 def load_config() -> MainConfig:
     """
     Loads config from a path specified by env variable
     falls back to default config.
     """
-    config_path = os.getenv('CONFIG_PATH')
-
-    if not config_path:
-        logger.info("No CONFIG_PATH environment variable set, using default config")
-        return MainConfig()
-
     try:
-        config = MainConfig.from_json(config_path)
-        logger.info(f"Loaded config from {config_path}")
+        config = MainConfig.from_json(CONFIG_PATH)
+        logger.info(f"Loaded config from {CONFIG_PATH}")
     except Exception as e:
-        logger.error(f"Error loading config from {config_path}: {e}")
+        logger.error(f"Error loading config from {CONFIG_PATH}: {e}")
         logger.info("Falling back to default config")
         config = MainConfig()
     return config
 
 
-def main():
-
+async def main():
     config = load_config()
     logger.info(f"Loaded config: {config}")
 
     customer_provider = CustomerDataProviderVectorized(
         config.validation_config,
-        config.customer_data_path
+        CUSTOMER_DATA_PATH,
+        batch_size=10000
     )
 
-    for batch in customer_provider.get_next_batch():
-        print(batch)
-
+    async with ShowAdsApiService("project_key") as service:
+        try:
+            for batch in customer_provider.get_next_batch():
+                await service.send_customers(batch)
+        except Exception as e:
+            logger.error(f"Failed to send customers: {e}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
