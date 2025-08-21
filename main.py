@@ -2,9 +2,8 @@
 
 import asyncio
 import logging
-import os
+from pathlib import Path
 
-from benchmarks.customer_provider_comparison import create_test_csv
 from src.config.main_config import MainConfig
 
 from src.services.customer_data_provider_vectorized import CustomerDataProviderVectorized
@@ -22,12 +21,7 @@ def load_config() -> MainConfig:
     Loads config from a path specified by env variable
     falls back to default config.
     """
-    config_path = os.getenv('CONFIG_PATH')
-
-    if not config_path:
-        logger.info("No CONFIG_PATH environment variable set, using default config")
-        return MainConfig()
-
+    config_path = Path(__file__).parent / 'config' / 'config.json'
     try:
         config = MainConfig.from_json(config_path)
         logger.info(f"Loaded config from {config_path}")
