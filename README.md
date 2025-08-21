@@ -6,7 +6,7 @@ Processes customer CSV data and sends it to the ShowAds API in bulk batches with
 
 The script loads customer data from CSV in batches, validates it, chunks each batch into max 1000-record batches, and sends them to the ShowAds API. It retries on failures (429, 500, 401).
 
-**Execution model**: Designed to run once and exit. Can be triggered periodically via cron, external scheduler, or container orchestration. The assignment didn't specify whether it should be a web server, self-scheduling daemon, or external trigger - so it runs as a simple batch processor.
+Designed to run once and exit. The assignment didn't specify whether it should be a web server, triggered externally, or periodically run itself, etc - so it runs as a simple script.
 
 ## Configuration
 
