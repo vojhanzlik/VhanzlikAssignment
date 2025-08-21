@@ -1,3 +1,5 @@
+"""Tests for validation configuration rules and constraints."""
+
 import pytest
 import tempfile
 import json

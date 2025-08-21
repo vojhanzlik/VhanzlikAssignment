@@ -1,3 +1,5 @@
+"""ShowAds API client service with retry logic and bulk processing capabilities."""
+
 import asyncio
 import logging
 from datetime import datetime, timedelta

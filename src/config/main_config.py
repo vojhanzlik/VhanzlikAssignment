@@ -1,3 +1,5 @@
+"""Main configuration management for the application."""
+
 import logging
 from pathlib import Path
 

@@ -1,3 +1,5 @@
+"""Tests for main configuration loading and validation."""
+
 import pytest
 import tempfile
 import json

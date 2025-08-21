@@ -1,3 +1,5 @@
+"""Tests for ShowAds API service integration, retry logic and error handling."""
+
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, Mock
 import pytest

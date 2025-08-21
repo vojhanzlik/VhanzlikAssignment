@@ -1,1 +1,1 @@
-# Models tests package
+"""Tests for data models and validation logic."""

@@ -1,0 +1,1 @@
+"""Customer data validation utilities and helper functions."""

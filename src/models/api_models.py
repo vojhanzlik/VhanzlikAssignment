@@ -1,3 +1,5 @@
+"""API request and response models for ShowAds service."""
+
 from typing import Dict, List
 
 from pydantic import BaseModel

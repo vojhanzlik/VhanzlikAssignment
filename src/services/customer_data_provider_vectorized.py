@@ -1,9 +1,10 @@
+"""Vectorized customer data provider with pandas operations."""
+
 import logging
 from pathlib import Path
 from typing import Generator, List
 import pandas as pd
 
-from src.config.validation_config import ValidationConfig
 from src.models.customer import Customer
 from src.services.customer_data_provider import CustomerDataProvider
 from src.utils.validation.customer_validation_vectorized import (
@@ -27,9 +28,9 @@ class CustomerDataProviderVectorized(CustomerDataProvider):
 
     def get_next_batch(self) -> Generator[List[Customer], None, None]:
         """
-        Generator that yields batches of validated customer records using optimized approach.
+        Generator that yields batches of validated customer records.
         """
-        logger.info(f"Starting optimized processing of CSV file: {self.csv_path}")
+        logger.info(f"Starting processing of CSV file: {self.csv_path}")
         logger.info(f"Batch size: {self.batch_size}")
         logger.info(f"Validation config: min_age={self.validation_config.min_age}, "
                     f"max_age={self.validation_config.max_age}")

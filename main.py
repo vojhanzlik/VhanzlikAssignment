@@ -1,9 +1,10 @@
+"""Main entry point for the data connector"""
+
 import asyncio
 import logging
 import os
 
 from src.config.main_config import MainConfig
-from src.models.customer import Customer
 
 from src.services.customer_data_provider_vectorized import CustomerDataProviderVectorized
 from src.services.showads_api_service import ShowAdsApiService

@@ -1,3 +1,5 @@
+"""Validation configuration for customer data processing rules."""
+
 import logging
 from typing import Annotated
 

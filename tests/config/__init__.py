@@ -1,1 +1,1 @@
-# Config tests package
+"""Tests for configuration management modules."""
