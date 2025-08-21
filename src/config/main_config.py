@@ -12,9 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class MainConfig(BaseModel):
-    """Configuration for customer validation parameters with robust JSON parsing."""
+    """Configuration for customer validation parameters with JSON parsing."""
 
-    customer_data_path: str = "./data/data.csv"
     validation_config: ValidationConfig = ValidationConfig()
 
     @classmethod

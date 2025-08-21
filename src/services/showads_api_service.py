@@ -63,7 +63,6 @@ class ShowAdsApiService:
         tasks = [asyncio.create_task(self._send_bulk_chunk(chunk)) for chunk in chunks]
         await asyncio.gather(*tasks)
 
-        logger.info(f"Successfully sent all {len(customers)} customers")
 
     async def get_token(self) -> str:
         """Get a valid access token, refreshing if necessary."""
