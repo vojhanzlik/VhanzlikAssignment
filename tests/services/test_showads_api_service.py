@@ -201,8 +201,12 @@ class TestShowAdsApiService:
         mock_session = Mock()
         # First two requests return 429, third succeeds
         responses = [
-            Mock(status=429),
-            Mock(status=429), 
+            Mock(status=429, raise_for_status=Mock(side_effect=ClientResponseError(
+                request_info=Mock(), history=Mock(), status=429
+            ))),
+            Mock(status=429, raise_for_status=Mock(side_effect=ClientResponseError(
+                request_info=Mock(), history=Mock(), status=429
+            ))), 
             Mock(status=200, json=AsyncMock(return_value={"AccessToken": "test_token"}))
         ]
         mock_session.post = Mock(side_effect=[AsyncContextManagerMock(r) for r in responses])
@@ -219,7 +223,9 @@ class TestShowAdsApiService:
         mock_session = Mock()
         # First request returns 500, second succeeds
         responses = [
-            Mock(status=500),
+            Mock(status=500, raise_for_status=Mock(side_effect=ClientResponseError(
+                request_info=Mock(), history=Mock(), status=500
+            ))),
             Mock(status=200, json=AsyncMock(return_value={"AccessToken": "test_token"}))
         ]
         mock_session.post = Mock(side_effect=[AsyncContextManagerMock(r) for r in responses])
@@ -236,7 +242,9 @@ class TestShowAdsApiService:
         mock_session = Mock()
         # First request returns 401, second succeeds after auth
         bulk_responses = [
-            Mock(status=401),
+            Mock(status=401, raise_for_status=Mock(side_effect=ClientResponseError(
+                request_info=Mock(), history=Mock(), status=401
+            ))),
             Mock(status=200)
         ]
         auth_response = Mock(status=200, json=AsyncMock(return_value={"AccessToken": "new_token"}))
@@ -262,7 +270,7 @@ class TestShowAdsApiService:
         mock_session = Mock()
         # All requests return 429
         mock_response = Mock(status=429, raise_for_status=Mock(side_effect=ClientResponseError(
-            request_info=Mock(), history=Mock()
+            request_info=Mock(), history=Mock(), status=429
         )))
         mock_session.post = Mock(return_value=AsyncContextManagerMock(mock_response))
         

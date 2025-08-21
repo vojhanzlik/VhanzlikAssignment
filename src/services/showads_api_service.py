@@ -2,12 +2,12 @@ import asyncio
 import logging
 import random
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable, Any, Coroutine
 
 import aiohttp
 from pydantic import BaseModel
 
-from src.models.api_models import AuthResponse, BulkRequest
+from src.models.api_models import AuthResponse, BulkRequest, BaseRequestBody, AuthRequest
 from src.models.customer import Customer
 
 logger = logging.getLogger(__name__)
@@ -70,86 +70,84 @@ class ShowAdsApiService:
             await self._authenticate()
         return self._access_token or ""
 
+    async def bulk_request(self, request: BulkRequest) -> None:
+        """Make request to the /banners/show/bulk endpoint."""
+        token = await self.get_token()
+        headers = {"Authorization": f"Bearer {token}"}
+
+        async with self.session.post(
+                f"{self.BASE_URL}/banners/show/bulk",
+                json=request.model_dump(),
+                headers=headers
+        ) as response:
+            if response.status == 200:
+                logger.info(f"Successfully sent {len(request.Data)} customers to ShowAds API")
+                return
+            elif response.status == 401:
+                self._access_token = None
+                self._token_expires_at = None
+                logger.warning("Received 401, clearing token")
+                response.raise_for_status()
+
+            response.raise_for_status()
+
+    async def auth_request(self, request: AuthRequest) -> str | None:
+        """Make request to the /auth endpoint."""
+        async with self.session.post(f"{self.BASE_URL}/auth", json=request.model_dump()) as response:
+            if response.status == 200:
+                auth_response = AuthResponse(**await response.json())
+                self._access_token = auth_response.AccessToken
+                self._token_expires_at = datetime.now() + timedelta(hours=23)
+                logger.info("Successfully authenticated")
+                return self._access_token
+
+            response.raise_for_status()
+            return None
+
     async def _authenticate(self) -> Optional[str]:
         """Authenticate with the ShowAds API and return access token."""
-        auth_data = {"ProjectKey": self.project_key}
-        
-        for attempt in range(1, self.MAX_ATTEMPTS + 1):
-            try:
-                async with self.session.post(f"{self.BASE_URL}/auth", json=auth_data) as response:
-                    if response.status == 200:
-                        auth_response = AuthResponse(**await response.json())
-                        self._access_token = auth_response.AccessToken
-                        self._token_expires_at = datetime.now() + timedelta(hours=23)
-                        logger.info("Successfully authenticated")
-                        return self._access_token
+        auth_data = AuthRequest(ProjectKey=self.project_key)
 
-                    elif response.status in (429, 500):
-                        if attempt < self.MAX_ATTEMPTS:
-                            delay = self._calculate_delay(attempt)
-                            logger.warning(f"Auth request failed with status {response.status}, retrying in {delay:.1f}s (attempt {attempt}/{self.MAX_ATTEMPTS})")
-                            await asyncio.sleep(delay)
-                            continue
-                    response.raise_for_status()
-            except aiohttp.ClientError as e:
-                if attempt < self.MAX_ATTEMPTS:
-                    delay = self._calculate_delay(attempt)
-                    logger.warning(f"Auth request failed with error: {e}, retrying in {delay:.1f}s (attempt {attempt}/{self.MAX_ATTEMPTS})")
-                    await asyncio.sleep(delay)
-                    continue
-                raise
-        return None
+        return await self._retry_request(self.auth_request, auth_data,  "Auth")
 
     async def _send_bulk_chunk(self, customers: List[Customer]) -> None:
         """Send a chunk of customers to the bulk endpoint."""
         if not customers:
             return
-        
+
+        # TODO: this could likely be made into a model as well
+        data = [
+            {"VisitorCookie": customer.Cookie, "BannerId": customer.Banner_id}
+            for customer in customers
+        ]
+        bulk_request = BulkRequest(Data=data)
+
+        await self._retry_request(self.bulk_request, bulk_request, "Bulk")
+    
+    async def _retry_request(self, request_func: Callable, request_body: BaseRequestBody, operation_name: str):
+        """Retry logic for API requests."""
         for attempt in range(1, self.MAX_ATTEMPTS + 1):
             try:
-                token = await self.get_token()
-                headers = {"Authorization": f"Bearer {token}"}
-                
-                data = [
-                    {"VisitorCookie": customer.Cookie, "BannerId": customer.Banner_id}
-                    for customer in customers
-                ]
-                
-                bulk_request = BulkRequest(Data=data)
-                
-                async with self.session.post(
-                    f"{self.BASE_URL}/banners/show/bulk", 
-                    json=bulk_request.model_dump(),
-                    headers=headers
-                ) as response:
-                    if response.status == 200:
-                        logger.info(f"Successfully sent {len(customers)} customers to ShowAds API")
-                        return
-                    elif response.status == 401:
-                        self._access_token = None
-                        self._token_expires_at = None
-                        if attempt < self.MAX_ATTEMPTS:
-                            logger.warning(f"Received 401 Unauthorized, clearing token and retrying (attempt {attempt}/{self.MAX_ATTEMPTS})")
-                            continue
-                    elif response.status in (429, 500):
-                        # Retry on rate limit or server error
-                        if attempt < self.MAX_ATTEMPTS:
-                            delay = self._calculate_delay(attempt)
-                            logger.warning(f"Bulk request failed with status {response.status}, retrying in {delay:.1f}s (attempt {attempt}/{self.MAX_ATTEMPTS})")
-                            await asyncio.sleep(delay)
-                            continue
-                    
-                    logger.error(f"Failed to send customers. Status: {response.status}")
-                    response.raise_for_status()
-                    
+                return await request_func(request_body)
+            except aiohttp.ClientResponseError as e:
+                if e.status in (401, 429, 500) and attempt < self.MAX_ATTEMPTS:
+                    if e.status == 401:
+                        logger.warning(f"{operation_name} request failed with 401, retrying (attempt {attempt}/{self.MAX_ATTEMPTS})")
+                    else:
+                        delay = self._calculate_delay(attempt)
+                        logger.warning(f"{operation_name} request failed with status {e.status}, retrying in {delay:.1f}s (attempt {attempt}/{self.MAX_ATTEMPTS})")
+                        await asyncio.sleep(delay)
+                    continue
+                raise
             except aiohttp.ClientError as e:
                 if attempt < self.MAX_ATTEMPTS:
                     delay = self._calculate_delay(attempt)
-                    logger.warning(f"Bulk request failed with error: {e}, retrying in {delay:.1f}s (attempt {attempt}/{self.MAX_ATTEMPTS})")
+                    logger.warning(f"{operation_name} request failed with error: {e}, retrying in {delay:.1f}s (attempt {attempt}/{self.MAX_ATTEMPTS})")
                     await asyncio.sleep(delay)
                     continue
                 raise
-    
+        return None
+
     def _calculate_delay(self, attempt: int) -> float:
         """Calculate delay that goes up with the attempt number."""
         return self.RETRY_BASE_DELAY * (2 * attempt)
