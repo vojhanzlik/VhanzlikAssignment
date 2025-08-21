@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Callable
 
 import aiohttp
+from aiohttp import ClientResponseError
 
 from src.models.api_models import AuthResponse, BulkRequest, BaseRequestBody, AuthRequest
 from src.models.customer import Customer
@@ -130,6 +131,9 @@ class ShowAdsApiService:
             bulk_request = BulkRequest(Data=data)
 
             await self._retry_request(self.bulk_request, bulk_request, "Bulk")
+
+        except ClientResponseError as e:
+            logger.error(f"Failed to send {len(customers)} customers to ShowAds API: {e}")
         except Exception as e:
             logger.error(f"Unhandled exception during bulk request: {e}")
 

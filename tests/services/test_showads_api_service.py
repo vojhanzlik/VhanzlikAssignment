@@ -1,5 +1,5 @@
 """Tests for ShowAds API service integration, retry logic and error handling."""
-
+import logging
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, Mock
 import pytest
@@ -147,7 +147,7 @@ class TestShowAdsApiService:
         assert call_args[1]["headers"]["Authorization"] == "Bearer test_token"
     
     @pytest.mark.asyncio
-    async def test_send_bulk_chunk_failure(self, sample_customers):
+    async def test_send_bulk_chunk_failure(self, sample_customers, caplog):
         """Test bulk chunk sending failure."""
         mock_session = Mock()
         mock_response = Mock()
@@ -160,9 +160,15 @@ class TestShowAdsApiService:
         service = ShowAdsApiService("test_project", session=mock_session)
         service._access_token = "test_token"
         service._token_expires_at = datetime.now() + timedelta(hours=1)
-        
-        with pytest.raises(ClientResponseError):
-            await service._send_bulk_chunk(sample_customers)
+
+        caplog.set_level(logging.ERROR)
+
+        await service._send_bulk_chunk(sample_customers)
+
+        assert any(
+            "Failed to send" in message
+            for message in caplog.messages
+        )
     
     @pytest.mark.asyncio
     async def test_send_bulk_chunk_empty_list(self):
