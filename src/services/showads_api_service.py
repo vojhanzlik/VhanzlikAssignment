@@ -32,7 +32,9 @@ class ShowAdsApiService:
         self._session = session
         self._access_token: Optional[str] = None
         self._token_expires_at: Optional[datetime] = None
-        
+
+        self._auth_lock = asyncio.Lock()
+
     async def __aenter__(self):
         self._session = self.session
         return self
@@ -67,8 +69,12 @@ class ShowAdsApiService:
         if (self._access_token is None or
             self._token_expires_at is None or
             datetime.now() >= self._token_expires_at):
-            await self._authenticate()
-        return self._access_token or ""
+            async with self._auth_lock:  # <--- only one coroutine enters
+                if (self._access_token is None or
+                        self._token_expires_at is None or
+                        datetime.now() >= self._token_expires_at):
+                    await self._authenticate()
+        return self._access_token
 
     async def bulk_request(self, request: BulkRequest) -> None:
         """Make request to the /banners/show/bulk endpoint."""
