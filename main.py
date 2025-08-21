@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -5,6 +6,7 @@ from src.config.main_config import MainConfig
 from src.models.customer import Customer
 
 from src.services.customer_data_provider_vectorized import CustomerDataProviderVectorized
+from src.services.showads_api_service import ShowAdsApiService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,7 +36,7 @@ def load_config() -> MainConfig:
     return config
 
 
-def main():
+async def main():
 
     config = load_config()
     logger.info(f"Loaded config: {config}")
@@ -44,9 +46,13 @@ def main():
         config.customer_data_path
     )
 
-    for batch in customer_provider.get_next_batch():
-        continue
-
+    async with ShowAdsApiService("project_key") as service:
+        try:
+            for batch in customer_provider.get_next_batch():
+                await service.send_customers(batch)
+                logger.info(f"Successfully sent {len(batch)} customers to ShowAds API")
+        except Exception as e:
+            logger.error(f"Failed to send customers: {e}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

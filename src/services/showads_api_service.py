@@ -23,7 +23,7 @@ class ShowAdsApiService:
     # api url
     BASE_URL = "https://golang-assignment-968918017632.europe-west3.run.app"
     # max number of attempts for a single api call
-    MAX_ATTEMPTS = 3
+    MAX_ATTEMPTS = 5
     # delay before retrying a previously failed api call in seconds
     RETRY_BASE_DELAY = 1.0
     
