@@ -1,11 +1,9 @@
 import asyncio
 import logging
-import random
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Callable, Any, Coroutine
+from typing import List, Optional, Callable
 
 import aiohttp
-from pydantic import BaseModel
 
 from src.models.api_models import AuthResponse, BulkRequest, BaseRequestBody, AuthRequest
 from src.models.customer import Customer
