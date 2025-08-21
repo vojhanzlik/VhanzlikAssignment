@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 
+from benchmarks.customer_provider_comparison import create_test_csv
 from src.config.main_config import MainConfig
 
 from src.services.customer_data_provider_vectorized import CustomerDataProviderVectorized
@@ -44,7 +45,8 @@ async def main():
 
     customer_provider = CustomerDataProviderVectorized(
         config.validation_config,
-        config.customer_data_path
+        config.customer_data_path,
+        batch_size=10000
     )
 
     async with ShowAdsApiService("project_key") as service:

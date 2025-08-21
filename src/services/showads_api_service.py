@@ -121,15 +121,18 @@ class ShowAdsApiService:
         if not customers:
             return
 
-        # TODO: this could likely be made into a model as well
-        data = [
-            {"VisitorCookie": customer.Cookie, "BannerId": customer.Banner_id}
-            for customer in customers
-        ]
-        bulk_request = BulkRequest(Data=data)
+        try:
+            # TODO: this could likely be made into a model as well
+            data = [
+                {"VisitorCookie": customer.Cookie, "BannerId": customer.Banner_id}
+                for customer in customers
+            ]
+            bulk_request = BulkRequest(Data=data)
 
-        await self._retry_request(self.bulk_request, bulk_request, "Bulk")
-    
+            await self._retry_request(self.bulk_request, bulk_request, "Bulk")
+        except Exception as e:
+            logger.error(f"Unhandled exception during bulk request: {e}")
+
     async def _retry_request(self, request_func: Callable, request_body: BaseRequestBody, operation_name: str):
         """Retry logic for API requests."""
         for attempt in range(1, self.MAX_ATTEMPTS + 1):
